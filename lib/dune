@@ -1,0 +1,8 @@
+(library
+ (name html_of_md)
+ (public_name html_of_md)
+ (modules
+   markdown_parser markdown_functor flavour
+   gfm common_mark pandoc original multi_markdown markdown_extra r_markdown
+   select_parser)
+ (modules_without_implementation markdown_parser))
