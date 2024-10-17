@@ -1,4 +1,4 @@
 (executable
  (public_name html_of_md)
  (name main)
- (libraries html_of_md cmdliner))
+ (libraries html_of_md cmdliner unix))
