@@ -3,7 +3,7 @@ module type MarkdownParser = sig
 
   type token
 
-  val tokenize : string -> token list
+  val tokenize : in_channel -> token list
 
   val parse : token list -> ast
 
