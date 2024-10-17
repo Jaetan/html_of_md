@@ -1,5 +1,4 @@
 open Markdown_parser
-
 open Gfm
 open Common_mark
 open Pandoc
@@ -7,7 +6,6 @@ open Original
 open Multi_markdown
 open Markdown_extra
 open R_markdown
-
 open Flavour
 
 let select_parser (flav : flavour) =
