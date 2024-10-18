@@ -1,8 +1,12 @@
 open Markdown_parser
 
-module MakeMarkdownProcessor (Parser : MarkdownParser) = struct
-  let process ic =
-    let tokens = Parser.tokenize ic in
+module type Processor = sig
+  val process : Uutf.decoder -> string
+end
+
+module MakeMarkdownProcessor (Parser : MarkdownParser) : Processor = struct
+  let process decoder =
+    let tokens = Parser.tokenize decoder in
     let ast = Parser.parse tokens in
     Parser.to_html ast
 end

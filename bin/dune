@@ -1,4 +1,5 @@
 (executable
  (public_name html_of_md)
  (name main)
- (libraries html_of_md cmdliner unix))
+ (modules main io processor)
+ (libraries html_of_md cmdliner unix uutf))
