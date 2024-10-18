@@ -2,44 +2,44 @@ open Io
 open Html_of_md.Select_parser
 open Html_of_md.Markdown_functor
 
-let f (input_channel : In_channel.t) (output_channel : Out_channel.t) (module Processor : Processor) =
+let handle_markdown (input_channel : In_channel.t) (output_channel : Out_channel.t) (module Processor : Processor) =
   let decoder = Uutf.decoder ~encoding:`UTF_8 (`Channel input_channel) in
   let result = Processor.process decoder in
   output_string output_channel result ; Ok ()
 
-let handle_with_channels input_filename output_filename (module Processor : Processor) f =
+let handle_with_channels input_filename output_filename (module Processor : Processor) handle_markdown =
   let open Result in
-  let handle_input_file input_file f =
-    try In_channel.with_open_bin input_file (fun ic -> f ic)
+  let handle_input_file input_file handle_markdown =
+    try In_channel.with_open_bin input_file (fun ic -> handle_markdown ic)
     with Sys_error msg -> Error ("Failed to open input file: " ^ input_file ^ ": " ^ msg)
   in
-  let handle_output_file output_file f =
-    try Out_channel.with_open_bin output_file (fun oc -> f oc)
+  let handle_output_file output_file handle_markdown =
+    try Out_channel.with_open_bin output_file (fun oc -> handle_markdown oc)
     with Sys_error msg -> Error ("Failed to open output file: " ^ output_file ^ ": " ^ msg)
   in
   match (input_filename, output_filename) with
   | Some input_file, Some output_file ->
       handle_input_file input_file (fun ic ->
-          handle_output_file output_file (fun oc -> f ic oc (module Processor : Processor)) )
+          handle_output_file output_file (fun oc -> handle_markdown ic oc (module Processor : Processor)) )
   | Some input_file, None ->
-      handle_input_file input_file (fun ic -> f ic stdout (module Processor))
+      handle_input_file input_file (fun ic -> handle_markdown ic stdout (module Processor))
   | None, Some output_file ->
-      handle_output_file output_file (fun oc -> f stdin oc (module Processor))
+      handle_output_file output_file (fun oc -> handle_markdown stdin oc (module Processor))
   | None, None ->
-      f stdin stdout (module Processor)
+      handle_markdown stdin stdout (module Processor)
 
 let process_file flavour input output =
   let (module Parser) = select_parser flavour in
   let module Processor = MakeMarkdownProcessor (Parser) in
   match (input, output) with
   | Stdin, Stdout ->
-      f stdin stdout (module Processor)
+      handle_markdown stdin stdout (module Processor)
   | Stdin, OutputFile output_filename ->
-      handle_with_channels None (Some output_filename) (module Processor) f
+      handle_with_channels None (Some output_filename) (module Processor) handle_markdown
   | InputFile input_filename, Stdout ->
-      handle_with_channels (Some input_filename) None (module Processor) f
+      handle_with_channels (Some input_filename) None (module Processor) handle_markdown
   | InputFile input_filename, OutputFile output_filename ->
-      handle_with_channels (Some input_filename) (Some output_filename) (module Processor) f
+      handle_with_channels (Some input_filename) (Some output_filename) (module Processor) handle_markdown
   | _ ->
       Error "Invalid input/output combination"
 
