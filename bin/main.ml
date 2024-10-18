@@ -1,6 +1,6 @@
 open Cmdliner
 open Html_of_md.Flavour
-open Io
+open Io_types
 open Processor
 
 (* Cmdliner converter for flavour *)

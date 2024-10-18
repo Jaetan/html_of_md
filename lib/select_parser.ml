@@ -8,8 +8,8 @@ open Markdown_extra
 open R_markdown
 open Flavour
 
-let select_parser (flav : flavour) =
-  match flav with
+let select_parser flavour =
+  match flavour with
   | GFM ->
       (module Gfm : MarkdownParser)
   | CommonMark ->
