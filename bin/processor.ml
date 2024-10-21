@@ -1,7 +1,34 @@
+(**
+  Module for processing Markdown documents with different flavours.
+
+  This module provides functionality to process Markdown content based on a specified
+  flavour and handles various input and output types (stdin, files, and directories).
+  It utilizes a parser module selected according to the given flavour to convert
+  Markdown into HTML.
+
+  The processing flow involves tokenizing the input, parsing it into an abstract
+  syntax tree (AST), and converting the AST to HTML.
+
+  @see: Html_of_md.Flavour for the available markdown flavours.
+  @see: Io_types for the definitions of input and output types.
+*)
+
 open Html_of_md.Markdown_functor
 open Html_of_md.Select_parser
 open Io_types
 
+(**
+  Processes a Markdown document based on the specified flavour and input/output types.
+
+  This function orchestrates the reading of input data, processing it into HTML, and
+  writing the output to the specified destination. It supports various combinations
+  of input and output types, including stdin, files, and directories.
+
+  @param flavour the markdown flavour to be used for processing.
+  @param input the input type which can be stdin, a file, or a directory.
+  @param output the output type which can be stdout, a file, or a directory.
+  @return a result indicating success (unit) or an error with a list of error messages.
+*)
 let process flavour input output =
   let (module Parser) = select_parser flavour in
   let module Processor = MakeMarkdownProcessor (Parser) in
