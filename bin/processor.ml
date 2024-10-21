@@ -41,16 +41,14 @@ let process flavour input output =
       (fun in_filename ->
         handle_output
           (fun () -> handle_with_channels (Some in_filename) None) (* g'1: InputFile to Stdout *)
-          (fun out_filename -> handle_with_channels (Some in_filename) (Some out_filename) )
-            (* g'2: InputFile to OutputFile *)
+          (fun out_filename -> handle_with_channels (Some in_filename) (Some out_filename)) (* g'2: InputFile to OutputFile *)
           (fun _dir -> Error "Invalid output") (* g'3: InputFile to OutputDir (error) *)
           output ) (* Pass the output argument here *)
       (fun _dir ->
         handle_output
           (fun () -> Error "Invalid output") (* g''1: InputDir to Stdout (error) *)
           (fun _out_filename -> Error "Invalid output") (* g''2: InputDir to OutputFile (error) *)
-          (fun _dir_out -> Error "Internal inconsistency: InputDir to OutputDir in process_file" )
-            (* g''3: InputDir to OutputDir (error) *)
+          (fun _dir_out -> Error "Internal inconsistency: InputDir to OutputDir in process_file") (* g''3: InputDir to OutputDir (error) *)
           output ) (* Pass the output argument here *)
       input
   in
@@ -73,7 +71,6 @@ let process flavour input output =
                   Ok () (* No error, return Ok without accumulating messages *)
               | Error msg ->
                   Error [msg]
-            (* Wrap the error message in a list *)
           in
           match (result, acc) with
           | Ok (), Ok () ->
@@ -83,24 +80,11 @@ let process flavour input output =
           | Error msg, Ok () ->
               Error msg (* Current error, no previous errors *)
           | Error msg, Error errors ->
-              Error (msg @ errors)
-          (* Concatenate error lists *) )
+              Error (msg @ errors) )
         (Ok ()) (* Initial accumulator is Ok () for success without errors *)
         items
     in
-    match process_dir dir_in dir_out with
-    | Ok () ->
-        Ok () (* No errors found *)
-    | Error errors ->
-        Error (List.rev errors)
-    (* Return the list of errors, reversed for original order *)
-  in
-  let handle_input_dir_error input =
-    match get_input_dir input with
-    | Some dir ->
-        Ok dir
-    | None ->
-        Error ["Invalid input: cannot get directory from a file or a common stream (stdin/stdout)."]
+    match process_dir dir_in dir_out with Ok () -> Ok () (* No errors found *) | Error errors -> Error (List.rev errors)
   in
   match validate_input_output input output with
   | Ok () ->
@@ -113,13 +97,9 @@ let process flavour input output =
             (fun output_file ->
               (* Handle input as stdin and output as file *)
               process_file input (output_of_string output_file) |> Result.map_error (fun msg -> [msg]) )
-            (fun output_dir ->
-              (* Handle input as stdin and output as directory *)
-              match handle_input_dir_error input with
-              | Ok dir ->
-                  process_directory dir output_dir
-              | Error msg ->
-                  Error msg )
+            (fun _output_dir ->
+              (* Error: directory as output is invalid for stdin input *)
+              Error ["Invalid output: cannot output to a directory when input is from stdin."] )
             output )
         (fun input_file ->
           handle_output
@@ -129,28 +109,19 @@ let process flavour input output =
             (fun output_file ->
               (* Handle input as file and output as file *)
               process_file input (output_of_string output_file) |> Result.map_error (fun msg -> [msg]) )
-            (fun output_dir ->
-              (* Handle input as file and output as directory *)
-              match handle_input_dir_error input with
-              | Ok dir ->
-                  process_directory dir output_dir
-              | Error msg ->
-                  Error msg )
+            (fun _output_dir ->
+              (* Error: directory as output is invalid for file input *)
+              Error ["Invalid output: cannot output to a directory when input is a file."] )
             output )
-        (fun _dir ->
+        (fun input_dir ->
           (* Handle input as directory *)
           handle_output
-            (fun () -> Error ["Invalid output"]) (* InputDir to Stdout (error) *)
-            (fun _out_filename -> Error ["Invalid output"]) (* InputDir to OutputFile (error) *)
+            (fun () -> Error ["Invalid output (input directory to stdout)"]) (* InputDir to Stdout (error) *)
+            (fun _out_filename -> Error ["Invalid output (input directory to output file)"]) (* InputDir to OutputFile (error) *)
             (fun output_dir ->
-              (* InputDir to OutputDir; process the directory *)
-              match handle_input_dir_error input with
-              | Ok dir ->
-                  process_directory dir output_dir
-              | Error msg ->
-                  Error msg )
+              (* InputDir to OutputDir; process the directory directly *)
+              process_directory input_dir output_dir )
             output )
         input
   | Error msg ->
       Error [msg]
-(* Wrap the validation error message in a list *)
